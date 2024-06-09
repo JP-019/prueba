@@ -12,28 +12,89 @@ class HomePages extends StatefulWidget {
 class _HomePagesState extends State<HomePages> {
   final Servicios firebaseService = Servicios();
   final TextEditingController textController = TextEditingController();
+  String estado = 'creado';
+  bool importante = false;
 
-  void openNoteBox({String? docID}) {
+  void openNoteBox(
+      {String? docID,
+      String? initialText,
+      String? initialEstado,
+      bool? initialImportante}) {
+    textController.text = initialText ?? '';
+    setState(() {
+      estado = initialEstado ?? 'creado';
+      importante = initialImportante ?? false;
+    });
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        content: TextField(
-          controller: textController,
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: textController,
+                  decoration: InputDecoration(hintText: 'Escriba'),
+                ),
+                DropdownButton<String>(
+                  value: estado,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      estado = newValue!;
+                    });
+                  },
+                  items: <String>[
+                    'creado',
+                    'por hacer',
+                    'trabajando',
+                    'finalizado'
+                  ].map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                ),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: importante,
+                      onChanged: (bool? newValue) {
+                        setState(() {
+                          importante = newValue!;
+                        });
+                      },
+                    ),
+                    const Text('Importante'),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
         actions: [
           ElevatedButton(
             onPressed: () {
               if (docID == null) {
-                firebaseService.addNote(textController.text);
+                firebaseService.addNote(
+                  textController.text,
+                  estado,
+                  importante,
+                );
               } else {
-                firebaseService.updateNote(docID, textController.text);
+                firebaseService.updateNote(
+                  docID,
+                  textController.text,
+                  estado,
+                  importante,
+                );
               }
               textController.clear();
               Navigator.pop(context);
             },
-            child: const Text(
-              "Add",
-            ),
+            child: const Text("Guardar"),
           ),
         ],
       ),
@@ -54,7 +115,7 @@ class _HomePagesState extends State<HomePages> {
         centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: openNoteBox,
+        onPressed: () => openNoteBox(),
         child: const Icon(Icons.add),
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -63,50 +124,57 @@ class _HomePagesState extends State<HomePages> {
           if (snapshot.hasData) {
             List<DocumentSnapshot> notesList = snapshot.data!.docs;
             return ListView.builder(
-                itemCount: notesList.length,
-                itemBuilder: (context, index) {
-                  DocumentSnapshot document = notesList[index];
-                  String docID = document.id;
-                  Map<String, dynamic> data =
-                      document.data() as Map<String, dynamic>;
-                  String noteText = data['note'];
-                  SizedBox(height: 20);
-                  return Container(
-                    margin:
-                        EdgeInsets.symmetric(vertical: 5.0, horizontal: 10.0),
-                    padding: EdgeInsets.all(10.0),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300], // Color de fondo gris claro
-                      borderRadius:
-                          BorderRadius.circular(10.0), // Borde redondeado
-                    ),
-                    child: ListTile(
-                      title: Text(noteText),
-                      trailing: Container(
-                        width:
-                            100, // Define el ancho deseado para el IconButton
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            IconButton(
-                              onPressed: () => openNoteBox(docID: docID),
-                              icon: const Icon(Icons.settings),
+              itemCount: notesList.length,
+              itemBuilder: (context, index) {
+                DocumentSnapshot document = notesList[index];
+                String docID = document.id;
+                Map<String, dynamic> data =
+                    document.data() as Map<String, dynamic>;
+                String noteText = data['note'];
+                String estado = data['estado'];
+                bool importante = data['importante'];
+
+                return Container(
+                  margin: const EdgeInsets.symmetric(
+                      vertical: 5.0, horizontal: 10.0),
+                  padding: const EdgeInsets.all(10.0),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  child: ListTile(
+                    title: Text(noteText),
+                    subtitle: Text(
+                        'Estado: $estado\nImportante: ${importante ? 'Sí' : 'No'}'),
+                    trailing: Container(
+                      width: 100,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                            onPressed: () => openNoteBox(
+                              docID: docID,
+                              initialText: noteText,
+                              initialEstado: estado,
+                              initialImportante: importante,
                             ),
-                            IconButton(
-                              onPressed: () =>
-                                  firebaseService.deleteNote(docID),
-                              icon: const Icon(Icons.delete),
-                            ),
-                          ],
-                        ),
+                            icon: const Icon(Icons.settings),
+                          ),
+                          IconButton(
+                            onPressed: () => firebaseService.deleteNote(docID),
+                            icon: const Icon(Icons.delete),
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                });
+                  ),
+                );
+              },
+            );
           } else {
             return Center(
               child: Container(
-                padding: EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16.0),
                 child: const Text('No note'),
               ),
             );
