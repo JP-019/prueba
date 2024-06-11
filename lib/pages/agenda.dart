@@ -12,38 +12,41 @@ class AgendaPage extends StatefulWidget {
 
 class _AgendaPageState extends State<AgendaPage> {
   final Servicios firebaseService = Servicios();
-  final TextEditingController textController = TextEditingController();
-  String estado = 'creado';
-  bool importante = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Agenda",
-          style: TextStyle(
-            color: Colors.white,
-          ),
-        ),
+        title: const Text("Agenda"),
         backgroundColor: Colors.blue,
         centerTitle: true,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: firebaseService.getNotesStream(),
+        stream: firebaseService.getCitasStream(),
         builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            List<DocumentSnapshot> notesList = snapshot.data!.docs;
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('No hay citas'));
+          } else {
+            print('Citas recuperadas: ${snapshot.data!.docs.length}'); // Debug
+            List<DocumentSnapshot> citasList = snapshot.data!.docs;
             return ListView.builder(
-              itemCount: notesList.length,
+              itemCount: citasList.length,
               itemBuilder: (context, index) {
-                DocumentSnapshot document = notesList[index];
+                DocumentSnapshot document = citasList[index];
                 String docID = document.id;
                 Map<String, dynamic> data =
                     document.data() as Map<String, dynamic>;
-                String noteText = data['note'];
-                String estado = data['estado'];
-                bool importante = data['importante'];
+
+                print('Datos de la cita: $data'); // Debug
+
+                String noteText = data['note'] ?? 'Nota sin texto';
+                String centro = data['centro'] ?? 'Centro desconocido';
+                String estado = data['estado'] ?? 'Desconocido';
+                bool importante = data['importante'] ?? false;
 
                 return Container(
                   margin: const EdgeInsets.symmetric(
@@ -56,23 +59,24 @@ class _AgendaPageState extends State<AgendaPage> {
                   child: ListTile(
                     title: Text(noteText),
                     subtitle: Text(
-                        'Estado: $estado\nImportante: ${importante ? 'Sí' : 'No'}'),
+                        'Centro: $centro\nEstado: $estado\nImportante: ${importante ? 'Sí' : 'No'}'),
                     trailing: Container(
                       width: 100,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           IconButton(
-                            onPressed: () => _openNoteBox(
+                            onPressed: () => _openCitaPage(
                               docID: docID,
-                              initialText: noteText,
+                              initialNote: noteText,
+                              initialCentro: centro,
                               initialEstado: estado,
                               initialImportante: importante,
                             ),
                             icon: const Icon(Icons.settings),
                           ),
                           IconButton(
-                            onPressed: () => _deleteNote(docID),
+                            onPressed: () => _deleteCita(docID),
                             icon: const Icon(Icons.delete),
                           ),
                         ],
@@ -81,13 +85,6 @@ class _AgendaPageState extends State<AgendaPage> {
                   ),
                 );
               },
-            );
-          } else {
-            return Center(
-              child: Container(
-                padding: const EdgeInsets.all(16.0),
-                child: const Text('No hay citas'),
-              ),
             );
           }
         },
@@ -99,13 +96,26 @@ class _AgendaPageState extends State<AgendaPage> {
     );
   }
 
-  void _deleteNote(String docID) {
-    firebaseService.deleteNote(docID);
+  void _deleteCita(String docID) {
+    firebaseService.deleteCita(docID);
   }
 
-  void _openNoteBox(
-      {String? docID,
-      String? initialText,
-      String? initialEstado,
-      bool? initialImportante}) {}
+  void _openCitaPage({
+    String? docID,
+    String? initialNote,
+    String? initialCentro,
+    String? initialEstado,
+    bool? initialImportante,
+  }) {
+    context.go(
+      '/cita',
+      extra: {
+        'docID': docID,
+        'initialNote': initialNote,
+        'initialCentro': initialCentro,
+        'initialEstado': initialEstado,
+        'initialImportante': initialImportante,
+      },
+    );
+  }
 }

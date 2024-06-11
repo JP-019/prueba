@@ -1,7 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:tarea/firebase_options.dart';
-import 'package:tarea/pages/agenda.dart';
 import 'package:tarea/src/router.dart';
 
 void main() async {

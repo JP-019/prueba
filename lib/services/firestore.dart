@@ -1,43 +1,31 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Servicios {
-  //---------------- create ----------------
-  final CollectionReference notas =
-      FirebaseFirestore.instance.collection('Cita');
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> addNote(
-    String note,
-    String centro,
-    String estado,
-    bool importante,
-  ) {
-    return notas.add({
+  Stream<QuerySnapshot> getCitasStream() {
+    return _firestore.collection('Citas').snapshots();
+  }
+
+  Future<void> addCita(String note, String centro, String estado, bool importante) {
+    return _firestore.collection('Citas').add({
       'note': note,
-      'Centro': centro,
-      'jornada': estado,
-      'fecha': Timestamp.now(),
-    });
-  }
-
-  //---------------- read ------------------
-  Stream<QuerySnapshot> getNotesStream() {
-    return notas.orderBy('timestamp', descending: true).snapshots();
-  }
-
-//
-  //---------------- update ----------------
-  Future<void> updateNote(String docID, String newNote, String centro,
-      String estado, bool importante) {
-    return notas.doc(docID).update({
-      'note': newNote,
-      'Centro': centro,
+      'centro': centro,
       'estado': estado,
-      'timestamp': Timestamp.now(),
+      'importante': importante,
     });
   }
 
-  //---------------- delete-----------------
-  Future<void> deleteNote(String docID) {
-    return notas.doc(docID).delete();
+  Future<void> updateCita(String docID, String note, String centro, String estado, bool importante) {
+    return _firestore.collection('Citas').doc(docID).update({
+      'note': note,
+      'centro': centro,
+      'estado': estado,
+      'importante': importante,
+    });
+  }
+
+  Future<void> deleteCita(String docID) {
+    return _firestore.collection('Citas').doc(docID).delete();
   }
 }

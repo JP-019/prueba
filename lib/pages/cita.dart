@@ -25,7 +25,7 @@ class CitaPage extends StatefulWidget {
 
 class _CitaPageState extends State<CitaPage> {
   final Servicios firebaseService = Servicios();
-  final TextEditingController textController = TextEditingController();
+  final TextEditingController noteController = TextEditingController();
   final TextEditingController centroController = TextEditingController();
   String estado = 'creado';
   bool importante = false;
@@ -33,9 +33,8 @@ class _CitaPageState extends State<CitaPage> {
   @override
   void initState() {
     super.initState();
-    // Llena los campos con los valores iniciales si están disponibles
     if (widget.initialNote != null) {
-      textController.text = widget.initialNote!;
+      noteController.text = widget.initialNote!;
     }
     if (widget.initialCentro != null) {
       centroController.text = widget.initialCentro!;
@@ -49,26 +48,22 @@ class _CitaPageState extends State<CitaPage> {
   }
 
   void save(BuildContext context) {
-    // Verifica si se está creando una nueva cita o actualizando una existente
     if (widget.docID == null) {
-      // Agrega una nueva cita a la base de datos
-      firebaseService.addNote(
-        textController.text,
+      firebaseService.addCita(
+        noteController.text,
         centroController.text,
         estado,
         importante,
       );
     } else {
-      // Actualiza una cita existente en la base de datos
-      firebaseService.updateNote(
+      firebaseService.updateCita(
         widget.docID!,
-        textController.text,
+        noteController.text,
         centroController.text,
         estado,
         importante,
       );
     }
-    // Después de guardar la cita, regresa a la pantalla principal
     context.go('/');
   }
 
@@ -79,7 +74,6 @@ class _CitaPageState extends State<CitaPage> {
         title: const Text("Asignar Cita"),
         backgroundColor: Colors.lightBlue,
         actions: [
-          // Botón de guardar
           IconButton(
             icon: const Icon(Icons.check),
             onPressed: () => save(context),
@@ -92,11 +86,8 @@ class _CitaPageState extends State<CitaPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text("Seleccione un centro médico"),
-            // Dropdown para seleccionar el centro médico
             DropdownButtonFormField<String>(
-              value: centroController.text.isNotEmpty
-                  ? centroController.text
-                  : null,
+              value: centroController.text.isNotEmpty ? centroController.text : null,
               onChanged: (String? newValue) {
                 setState(() {
                   centroController.text = newValue!;
@@ -119,14 +110,12 @@ class _CitaPageState extends State<CitaPage> {
             ),
             const SizedBox(height: 16.0),
             const Text("Fecha"),
-            // Campo de texto para ingresar la fecha de la cita
             TextField(
-              controller: textController,
+              controller: noteController,
               decoration: const InputDecoration(hintText: 'Escriba la fecha'),
             ),
             const SizedBox(height: 16.0),
             const Text("Jornada"),
-            // Dropdown para seleccionar la jornada de la cita
             DropdownButtonFormField<String>(
               value: estado.isNotEmpty ? estado : null,
               onChanged: (String? newValue) {
@@ -147,7 +136,6 @@ class _CitaPageState extends State<CitaPage> {
             ),
             const SizedBox(height: 16.0),
             const Text("Reservar un doctor para tu cita"),
-            // Checkbox para marcar si la cita es importante
             CheckboxListTile(
               value: importante,
               onChanged: (bool? newValue) {
@@ -158,7 +146,6 @@ class _CitaPageState extends State<CitaPage> {
               title: const Text('Importante'),
             ),
             const SizedBox(height: 16.0),
-            // Botón para buscar doctor
             ElevatedButton(
               onPressed: () {
                 // Agrega lógica para buscar doctor
