@@ -3,15 +3,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Servicios {
   //---------------- get ------------------
   final CollectionReference notas =
-      FirebaseFirestore.instance.collection('Nota');
+      FirebaseFirestore.instance.collection('Citas');
 
   //---------------- create ----------------
-  Future<void> addNote(String note, String estado, bool importante) {
+  Future<void> addNote(
+    String note,
+    String centro,
+    String estado,
+    bool importante,
+  ) {
     return notas.add({
       'note': note,
-      'estado': estado,
-      'importante': importante,
-      'timestamp': Timestamp.now(),
+      'Centro': centro,
+      'jornada': estado,
+      'fecha': Timestamp.now(),
     });
   }
 
@@ -21,11 +26,12 @@ class Servicios {
   }
 
   //---------------- update ----------------
-  Future<void> updateNote(String docID, String newNote, String estado, bool importante) {
+  Future<void> updateNote(String docID, String newNote, String centro,
+      String estado, bool importante) {
     return notas.doc(docID).update({
       'note': newNote,
+      'Centro': centro,
       'estado': estado,
-      'importante': importante,
       'timestamp': Timestamp.now(),
     });
   }

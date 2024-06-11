@@ -1,7 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:tarea/firebase_options.dart';
-import 'package:tarea/pages/home_pages.dart';
+import 'package:tarea/pages/agenda.dart';
+import 'package:tarea/src/router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,9 +21,11 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return  MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      home: HomePages(),
+      routerConfig: router
+     
+
     );
   }
 }
