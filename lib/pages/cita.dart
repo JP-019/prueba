@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:tarea/services/firestore.dart';
 
 class CitaPage extends StatefulWidget {
@@ -25,26 +27,16 @@ class CitaPage extends StatefulWidget {
 
 class _CitaPageState extends State<CitaPage> {
   final Servicios firebaseService = Servicios();
-  final TextEditingController textController = TextEditingController();
   final TextEditingController centroController = TextEditingController();
   String estado = 'creado';
   bool importante = false;
+  DateTime? selectedDate;
 
   @override
   void initState() {
     super.initState();
-    if (widget.initialNote != null) {
-      textController.text = widget.initialNote!;
-    }
-    if (widget.initialCentro != null) {
-      centroController.text = widget.initialCentro!;
-    }
-    if (widget.initialEstado != null) {
-      estado = widget.initialEstado!;
-    }
-    if (widget.initialImportante != null) {
-      importante = widget.initialImportante!;
-    }
+    // Set initial date to current date
+    selectedDate = DateTime.now();
   }
 
   @override
@@ -56,25 +48,7 @@ class _CitaPageState extends State<CitaPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
-            onPressed: () {
-              if (widget.docID == null) {
-                firebaseService.addNote(
-                  textController.text,
-                  centroController.text,
-                  estado,
-                  importante,
-                );
-              } else {
-                firebaseService.updateNote(
-                  widget.docID!,
-                  textController.text,
-                  centroController.text,
-                  estado,
-                  importante,
-                );
-              }
-              context.pop();
-            },
+            onPressed: () => _saveAndPop(context),
           ),
         ],
       ),
@@ -85,9 +59,7 @@ class _CitaPageState extends State<CitaPage> {
           children: [
             const Text("Seleccione un centro médico"),
             DropdownButtonFormField<String>(
-              value: centroController.text.isNotEmpty
-                  ? centroController.text
-                  : null,
+              value: widget.initialCentro,
               onChanged: (String? newValue) {
                 setState(() {
                   centroController.text = newValue!;
@@ -109,10 +81,15 @@ class _CitaPageState extends State<CitaPage> {
               ),
             ),
             const SizedBox(height: 16.0),
-            const Text("Fecha"),
-            TextField(
-              controller: textController,
-              decoration: const InputDecoration(hintText: 'Escriba la fecha'),
+            ElevatedButton(
+              onPressed: () {
+                _selectDate(context);
+              },
+              child: Text(
+                selectedDate != null
+                    ? 'Fecha seleccionada: ${DateFormat('yyyy-MM-dd').format(selectedDate!)}'
+                    : 'Seleccione una fecha',
+              ),
             ),
             const SizedBox(height: 16.0),
             const Text("Jornada"),
@@ -151,11 +128,58 @@ class _CitaPageState extends State<CitaPage> {
                 // Agrega lógica para buscar doctor
               },
               child: const Text('Buscar doctor'),
-              style: ElevatedButton.styleFrom(primary: Colors.green),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             ),
           ],
         ),
       ),
     );
+  }
+
+  void _selectDate(BuildContext context) {
+    DatePicker.showDatePicker(
+      context,
+      showTitleActions: true,
+      minTime: DateTime.now(),
+      maxTime: DateTime(2100, 12, 31),
+      onChanged: (date) {
+        setState(() {
+          selectedDate = date;
+        });
+      },
+      onConfirm: (date) {
+        setState(() {
+          selectedDate = date;
+        });
+      },
+      currentTime: DateTime.now(),
+    );
+  }
+
+  void _saveAndPop(BuildContext context) {
+    if (widget.docID == null) {
+      firebaseService.addNote(
+        selectedDate
+            .toString(), // Change to whatever format you want to save the date
+        centroController.text,
+        estado,
+        importante,
+      );
+    } else {
+      firebaseService.updateNote(
+        widget.docID!,
+        selectedDate
+            .toString(), // Change to whatever format you want to save the date
+        centroController.text,
+        estado,
+        importante,
+      );
+    }
+
+    if (Navigator.canPop(context)) {
+      context.pop();
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 }
