@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:tarea/services/firestore.dart';
 
 class CitaPage extends StatefulWidget {
@@ -27,16 +25,51 @@ class CitaPage extends StatefulWidget {
 
 class _CitaPageState extends State<CitaPage> {
   final Servicios firebaseService = Servicios();
+  final TextEditingController textController = TextEditingController();
   final TextEditingController centroController = TextEditingController();
   String estado = 'creado';
   bool importante = false;
-  DateTime? selectedDate;
 
   @override
   void initState() {
     super.initState();
-    // Set initial date to current date
-    selectedDate = DateTime.now();
+    // Llena los campos con los valores iniciales si están disponibles
+    if (widget.initialNote != null) {
+      textController.text = widget.initialNote!;
+    }
+    if (widget.initialCentro != null) {
+      centroController.text = widget.initialCentro!;
+    }
+    if (widget.initialEstado != null) {
+      estado = widget.initialEstado!;
+    }
+    if (widget.initialImportante != null) {
+      importante = widget.initialImportante!;
+    }
+  }
+
+  void save(BuildContext context) {
+    // Verifica si se está creando una nueva cita o actualizando una existente
+    if (widget.docID == null) {
+      // Agrega una nueva cita a la base de datos
+      firebaseService.addNote(
+        textController.text,
+        centroController.text,
+        estado,
+        importante,
+      );
+    } else {
+      // Actualiza una cita existente en la base de datos
+      firebaseService.updateNote(
+        widget.docID!,
+        textController.text,
+        centroController.text,
+        estado,
+        importante,
+      );
+    }
+    // Después de guardar la cita, regresa a la pantalla principal
+    context.go('/');
   }
 
   @override
@@ -46,9 +79,10 @@ class _CitaPageState extends State<CitaPage> {
         title: const Text("Asignar Cita"),
         backgroundColor: Colors.lightBlue,
         actions: [
+          // Botón de guardar
           IconButton(
             icon: const Icon(Icons.check),
-            onPressed: () => _saveAndPop(context),
+            onPressed: () => save(context),
           ),
         ],
       ),
@@ -58,8 +92,11 @@ class _CitaPageState extends State<CitaPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text("Seleccione un centro médico"),
+            // Dropdown para seleccionar el centro médico
             DropdownButtonFormField<String>(
-              value: widget.initialCentro,
+              value: centroController.text.isNotEmpty
+                  ? centroController.text
+                  : null,
               onChanged: (String? newValue) {
                 setState(() {
                   centroController.text = newValue!;
@@ -81,18 +118,15 @@ class _CitaPageState extends State<CitaPage> {
               ),
             ),
             const SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: () {
-                _selectDate(context);
-              },
-              child: Text(
-                selectedDate != null
-                    ? 'Fecha seleccionada: ${DateFormat('yyyy-MM-dd').format(selectedDate!)}'
-                    : 'Seleccione una fecha',
-              ),
+            const Text("Fecha"),
+            // Campo de texto para ingresar la fecha de la cita
+            TextField(
+              controller: textController,
+              decoration: const InputDecoration(hintText: 'Escriba la fecha'),
             ),
             const SizedBox(height: 16.0),
             const Text("Jornada"),
+            // Dropdown para seleccionar la jornada de la cita
             DropdownButtonFormField<String>(
               value: estado.isNotEmpty ? estado : null,
               onChanged: (String? newValue) {
@@ -113,6 +147,7 @@ class _CitaPageState extends State<CitaPage> {
             ),
             const SizedBox(height: 16.0),
             const Text("Reservar un doctor para tu cita"),
+            // Checkbox para marcar si la cita es importante
             CheckboxListTile(
               value: importante,
               onChanged: (bool? newValue) {
@@ -123,6 +158,7 @@ class _CitaPageState extends State<CitaPage> {
               title: const Text('Importante'),
             ),
             const SizedBox(height: 16.0),
+            // Botón para buscar doctor
             ElevatedButton(
               onPressed: () {
                 // Agrega lógica para buscar doctor
@@ -134,52 +170,5 @@ class _CitaPageState extends State<CitaPage> {
         ),
       ),
     );
-  }
-
-  void _selectDate(BuildContext context) {
-    DatePicker.showDatePicker(
-      context,
-      showTitleActions: true,
-      minTime: DateTime.now(),
-      maxTime: DateTime(2100, 12, 31),
-      onChanged: (date) {
-        setState(() {
-          selectedDate = date;
-        });
-      },
-      onConfirm: (date) {
-        setState(() {
-          selectedDate = date;
-        });
-      },
-      currentTime: DateTime.now(),
-    );
-  }
-
-  void _saveAndPop(BuildContext context) {
-    if (widget.docID == null) {
-      firebaseService.addNote(
-        selectedDate
-            .toString(), // Change to whatever format you want to save the date
-        centroController.text,
-        estado,
-        importante,
-      );
-    } else {
-      firebaseService.updateNote(
-        widget.docID!,
-        selectedDate
-            .toString(), // Change to whatever format you want to save the date
-        centroController.text,
-        estado,
-        importante,
-      );
-    }
-
-    if (Navigator.canPop(context)) {
-      context.pop();
-    } else {
-      Navigator.of(context).pop();
-    }
   }
 }

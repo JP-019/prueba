@@ -1,11 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Servicios {
-  //---------------- get ------------------
-  final CollectionReference notas =
-      FirebaseFirestore.instance.collection('Citas');
-
   //---------------- create ----------------
+  final CollectionReference notas =
+      FirebaseFirestore.instance.collection('Cita');
+
   Future<void> addNote(
     String note,
     String centro,
@@ -25,6 +24,7 @@ class Servicios {
     return notas.orderBy('timestamp', descending: true).snapshots();
   }
 
+//
   //---------------- update ----------------
   Future<void> updateNote(String docID, String newNote, String centro,
       String estado, bool importante) {

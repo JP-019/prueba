@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:tarea/services/firestore.dart';
 
@@ -12,21 +12,22 @@ class AgendaPage extends StatefulWidget {
 
 class _AgendaPageState extends State<AgendaPage> {
   final Servicios firebaseService = Servicios();
+  final TextEditingController textController = TextEditingController();
+  String estado = 'creado';
+  bool importante = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Agenda"),
+        title: const Text(
+          "Agenda",
+          style: TextStyle(
+            color: Colors.white,
+          ),
+        ),
         backgroundColor: Colors.blue,
         centerTitle: true,
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          context.go('/cita');
-        },
-        child: const Icon(Icons.add),
-        backgroundColor: Colors.blue,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: firebaseService.getNotesStream(),
@@ -41,7 +42,6 @@ class _AgendaPageState extends State<AgendaPage> {
                 Map<String, dynamic> data =
                     document.data() as Map<String, dynamic>;
                 String noteText = data['note'];
-                String centro = data['Centro'];
                 String estado = data['estado'];
                 bool importante = data['importante'];
 
@@ -50,32 +50,29 @@ class _AgendaPageState extends State<AgendaPage> {
                       vertical: 5.0, horizontal: 10.0),
                   padding: const EdgeInsets.all(10.0),
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: const Color.fromARGB(255, 171, 166, 166),
                     borderRadius: BorderRadius.circular(10.0),
                   ),
                   child: ListTile(
                     title: Text(noteText),
                     subtitle: Text(
-                        'Centro: $centro\nEstado: $estado\nImportante: ${importante ? 'Sí' : 'No'}'),
+                        'Estado: $estado\nImportante: ${importante ? 'Sí' : 'No'}'),
                     trailing: Container(
                       width: 100,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           IconButton(
-                            onPressed: () {
-                              context.go('/cita', extra: {
-                                'docID': docID,
-                                'initialNote': noteText,
-                                'initialCentro': centro,
-                                'initialEstado': estado,
-                                'initialImportante': importante,
-                              });
-                            },
+                            onPressed: () => _openNoteBox(
+                              docID: docID,
+                              initialText: noteText,
+                              initialEstado: estado,
+                              initialImportante: importante,
+                            ),
                             icon: const Icon(Icons.settings),
                           ),
                           IconButton(
-                            onPressed: () => firebaseService.deleteNote(docID),
+                            onPressed: () => _deleteNote(docID),
                             icon: const Icon(Icons.delete),
                           ),
                         ],
@@ -95,6 +92,20 @@ class _AgendaPageState extends State<AgendaPage> {
           }
         },
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.go("/cita"),
+        child: const Icon(Icons.add),
+      ),
     );
   }
+
+  void _deleteNote(String docID) {
+    firebaseService.deleteNote(docID);
+  }
+
+  void _openNoteBox(
+      {String? docID,
+      String? initialText,
+      String? initialEstado,
+      bool? initialImportante}) {}
 }
